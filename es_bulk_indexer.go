@@ -114,8 +114,8 @@ func logQueryES(apiURL string, queries []string) {
 
 const searchAll = `{ "query": { "range": { "created_at": { "time_zone": "UTC", "gte": "now-1d/d", "lt": "now" } } } }`
 
-// logViaEsCli uses bulkIndex to inject docs to es
-func logViaEsCli(apiURL string, hostname string) {
+// generateLogsToES uses bulkIndex to inject docs to es
+func generateLogsToES(apiURL string, hostname string) {
 	es, err := esClient(apiURL)
 	if err != nil {
 		log.Fatalf("Error creating the client: %s", err)

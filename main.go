@@ -27,6 +27,7 @@ var (
 	apiURL     string
 	logPerSec  int64
 	remoteType string
+	tenantID   string
 	stopC      = make(chan os.Signal)
 )
 
@@ -73,6 +74,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&apiURL, "url", "", "send log via loki api using the provided url (e.g http://localhost:3100/api/prom/push)")
 	rootCmd.PersistentFlags().Int64Var(&logPerSec, "logps", 500, "The total amount of log per second to generate.(default 500)")
 	rootCmd.PersistentFlags().StringVar(&remoteType, "remote-type", "loki", "Type of the remote destination: loki, elasticsearch. (default loki)")
+	rootCmd.PersistentFlags().StringVar(&tenantID, "tenant-id", "fake", "The tenant ID to use for sending logs to loki.")
 
 	rootCmd.AddCommand(generateCmd)
 	rootCmd.AddCommand(queryCmd)
@@ -135,10 +137,10 @@ func generateLog() {
 	if apiURL != "" {
 		switch remoteType {
 		case "loki":
-			logViaAPI(apiURL, host)
+			generateLogsToLoki(apiURL, host, tenantID)
 		case "elasticsearch":
 			fmt.Println("Sending logging to es")
-			logViaEsCli(apiURL, host)
+			generateLogsToES(apiURL, host)
 		default:
 			fmt.Printf("Unsupported remote type: %s\n", remoteType)
 		}
@@ -167,7 +169,7 @@ func generateLog() {
 	}
 }
 
-func logViaAPI(apiURL string, hostname string) {
+func generateLogsToLoki(apiURL, hostname, tenantID string) {
 	u, err := url.Parse(apiURL)
 	if err != nil {
 		panic(err)
@@ -181,7 +183,8 @@ func logViaAPI(apiURL string, hostname string) {
 			MaxBackoff: time.Second * 5,
 			MaxRetries: 5,
 		},
-		URL: flagext.URLValue{URL: u},
+		URL:      flagext.URLValue{URL: u},
+		TenantID: tenantID,
 	}, util.Logger)
 	if err != nil {
 		panic(err)
